@@ -7,14 +7,17 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 
 from loguru import logger
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient, UpdateOne
 
 from openf1.util.misc import SingletonMeta, timed_cache
 
-_MONGO_CONNECTION_STRING = os.getenv("MONGO_CONNECTION_STRING")
-_MONGO_DATABASE = "openf1-livetiming"
+from dotenv import load_dotenv
+load_dotenv()
 
+_MONGO_CONNECTION_STRING = os.getenv("MONGO_CONNECTION_STRING")
+_MONGO_DATABASE =  os.getenv("MONGO_DATABASE") or "openf1-livetiming"
 
 @lru_cache()
 def _get_mongo_db_sync():
@@ -22,19 +25,28 @@ def _get_mongo_db_sync():
     db = client[_MONGO_DATABASE]
     return db
 
-
 @lru_cache()
 def _get_mongo_db_async():
     client = AsyncIOMotorClient(_MONGO_CONNECTION_STRING)
-    db = client[_MONGO_DATABASE]
-    return db
-
+    return client[_MONGO_DATABASE]
 
 def query_db(collection_name: str, filters: dict) -> list[dict]:
     collection = _get_mongo_db_sync()[collection_name]
     results = collection.find(filters)
     return list(results)
 
+def health_check() -> bool:
+    try:
+        client = MongoClient(_MONGO_CONNECTION_STRING)
+        db = client[_MONGO_DATABASE]
+        status = db.command("ping")
+        if status:
+            return True
+        else:
+            return False
+    except Exception as e:
+        logger.error(f"MongoDB health check failed: {str(e)}")
+        raise e
 
 @timed_cache(60)  # Cache the output for 1 minute
 def get_latest_session_info() -> int:

@@ -16,7 +16,7 @@ from openf1.services.query_api.query_params import (
 )
 from openf1.services.query_api.sort import sort_results
 from openf1.services.query_api.tmp_fixes import apply_tmp_fixes
-from openf1.util.db import query_db
+from openf1.util.db import query_db, health_check
 from openf1.util.misc import deduplicate_dicts
 
 app = FastAPI()
@@ -41,6 +41,17 @@ def _get_favicon() -> Response:
     else:
         raise HTTPException(status_code=404, detail="Favicon not found")
 
+#mongo/service health check    
+def _health_check() -> Response:
+    try:
+        # Check if MongoDB is accessible
+        state = health_check()
+        if state:
+            return {"status": "healthy", "database": "connected"}, 200
+        else:
+            return {"status": "unhealthy", "database": "not connected"}, 200
+    except Exception as e:
+        return {"status": "unhealthy", "exception": str(e)}, 503
 
 def _parse_path(path: str) -> str:
     """
@@ -119,11 +130,15 @@ def _process_request(request: Request, path: str) -> list[dict] | Response:
         return results
 
 
+
+
 @app.api_route("/{path:path}", methods=["GET", "POST"])
 async def endpoint(request: Request, path: str):
     try:
         if path == "favicon.ico":
             return _get_favicon()
+        if path == "health":
+            return _health_check()
         else:
             return _process_request(request, path)
 
