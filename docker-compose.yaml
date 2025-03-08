@@ -37,24 +37,7 @@ services:
     command: python -m pip install -r requirements.txt
     networks:
       - openf1-network
-
-  # Data Ingestor service (optional, enable if you want to fetch live data)
-  #ingestor:
-  #  build:
-  #    context: .
-  #    dockerfile: Dockerfile
-  #  container_name: ${INGESTOR_CONTAINER_NAME}
-  #  environment:
-  #    - MONGO_CONNECTION_STRING=mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_CONTAINER_NAME}:27017
-  #  volumes:
-  #    - ./:/app
-  #  depends_on:
-  #    mongodb:
-  ##      condition: service_healthy
-   # command: python -m openf1.services.ingestor_livetiming.real_time.run
-   # networks:
-   #   - openf1-network
-
+      
 networks:
   openf1-network:
     driver: bridge
