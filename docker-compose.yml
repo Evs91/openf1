@@ -34,7 +34,7 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
-    command: python -m pip install -r requirements.txt
+    command: /bin/bash     # python -m pip install -r requirements.txt
     networks:
       - openf1-network
       
